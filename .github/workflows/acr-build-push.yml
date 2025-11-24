@@ -1,0 +1,34 @@
+name: ACR自动构建推送（全新脚本）
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 登录阿里云ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: ${{ secrets.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_REGISTRY_USER }}
+          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
+
+      - name: 构建镜像
+        run: |
+          TAG=${{ github.sha }}
+          # 明确的docker build命令，无任何多余字符
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$TAG .
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest .
+
+      - name: 推送镜像
+        run: |
+          TAG=${{ github.sha }}
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$TAG
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest
+
+      - name: 退出登录
+        run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
