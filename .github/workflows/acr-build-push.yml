@@ -1,4 +1,4 @@
-name: ACR自动构建推送（全新脚本）
+name: ACR最终构建推送
 on:
   push:
     branches: [ main ]
@@ -17,10 +17,9 @@ jobs:
           username: ${{ secrets.ALIYUN_REGISTRY_USER }}
           password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-      - name: 构建镜像
+      - name: 构建镜像（强制使用docker build）
         run: |
           TAG=${{ github.sha }}
-          # 明确的docker build命令，无任何多余字符
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$TAG .
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest .
 
