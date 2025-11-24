@@ -9,21 +9,21 @@ jobs:
       - name: 拉取代码
         uses: actions/checkout@v4
 
-      - name: 登录阿里云ACR（硬编码账号密码，测试用）
-        run: docker login crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com -u nick13 -p Wzj018812
+      - name: 登录阿里云ACR
+        run: docker login ${{ secrets.ALIYUN_REGISTRY }} -u ${{ secrets.ALIYUN_REGISTRY_USER }} -p ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-      - name: 构建镜像（硬编码地址）
+      - name: 构建镜像
         run: |
-          IMAGE_REPO="crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com/levi-jac17/web"
+          IMAGE_REPO="${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web"
           TAG="${{ github.sha }}"
           docker build -t "${IMAGE_REPO}:${TAG}" -t "${IMAGE_REPO}:latest" .
 
-      - name: 推送镜像（硬编码地址）
+      - name: 推送镜像
         run: |
-          IMAGE_REPO="crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com/levi-jac17/web"
+          IMAGE_REPO="${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web"
           TAG="${{ github.sha }}"
           docker push "${IMAGE_REPO}:${TAG}"
           docker push "${IMAGE_REPO}:latest"
 
       - name: 退出登录
-        run: docker logout crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com
+        run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
