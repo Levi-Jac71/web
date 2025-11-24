@@ -8,31 +8,22 @@ jobs:
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
-      - name: 登录阿里云ACR
-        uses: aliyun/acr-login@v1
-        with:
-          login-server: ${{ secrets.ALIYUN_REGISTRY }}
-          username: ${{ secrets.ALIYUN_REGISTRY_USER }}
-          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
-      - name: 构建镜像（优化：变量清理 + 一次构建多标签）
+
+      - name: 登录阿里云ACR（硬编码账号密码，测试用）
+        run: docker login crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com -u nick13 -p Wzj018812
+
+      - name: 构建镜像（硬编码地址）
         run: |
-          # 清理变量（xargs 去除首尾空白/换行，避免拼接错误）
-          ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
-          ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
-          IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
+          IMAGE_REPO="crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com/levi-jac17/web"
           TAG="${{ github.sha }}"
-          # 一次构建，打 2 个标签（避免重复构建，节省时间）
           docker build -t "${IMAGE_REPO}:${TAG}" -t "${IMAGE_REPO}:latest" .
-      - name: 推送镜像（优化：变量复用 + 清晰日志）
+
+      - name: 推送镜像（硬编码地址）
         run: |
-          ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
-          ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
-          IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
+          IMAGE_REPO="crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com/levi-jac17/web"
           TAG="${{ github.sha }}"
-          # 打印镜像地址（方便调试，查看实际推送的地址）
-          echo "正在推送镜像：${IMAGE_REPO}:${TAG}"
-          echo "正在推送镜像：${IMAGE_REPO}:latest"
           docker push "${IMAGE_REPO}:${TAG}"
           docker push "${IMAGE_REPO}:latest"
+
       - name: 退出登录
-        run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
+        run: docker logout crpi-s2i7lvq2huf5ejqa.cn-hangzhou.personal.cr.aliyuncs.com
