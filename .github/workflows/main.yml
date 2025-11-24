@@ -1,44 +1,41 @@
 name: 自动构建并推送镜像到阿里云ACR
 on:
   push:
-    branches: [ main ]  # 触发条件：main分支有代码推送时执行
+    branches: [ main ]  # main分支推送代码时触发
   pull_request:
-    branches: [ main ]  # 可选：PR合并到main时执行（可删除）
+    branches: [ main ]
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest  # 运行环境：Ubuntu服务器
+    runs-on: ubuntu-latest
     steps:
       # 步骤1：拉取GitHub仓库代码
       - name: 拉取代码
         uses: actions/checkout@v4
 
-      # 步骤2：登录阿里云ACR（核心步骤，使用Secrets中的凭证）
+      # 步骤2：登录阿里云ACR
       - name: 登录阿里云ACR
-        uses: aliyun/acr-login@v1  # 阿里云官方登录Action
+        uses: aliyun/acr-login@v1
         with:
-          login-server: ${{ secrets.ALIYUN_REGISTRY }}  # 仓库地址
-          username: ${{ secrets.ALIYUN_REGISTRY_USER }}  # 用户名
-          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}  # 固定密码（已修正名称）
+          login-server: ${{ secrets.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_REGISTRY_USER }}
+          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-      # 步骤3：构建Docker镜像（标签格式：仓库地址/命名空间/仓库名:版本）
+      # 步骤3：构建Docker镜像（修正命令：去掉x，规范格式）
       - name: 构建镜像
         run: |
-          # 定义镜像标签（用提交SHA作为版本，避免重复）
-          IMAGE_TAG=${{ github.sha }}
-          # 构建命令（替换web为你的阿里云镜像仓库名，如你的仓库叫web就保留）
+          IMAGE_TAG=${{ github.sha }}  # 用提交SHA作为版本标签
+          # 修正后的构建命令（docker build，不是docker buildx build）
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$IMAGE_TAG .
-          # 额外打一个latest标签（方便拉取最新版本）
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest .
 
       # 步骤4：推送镜像到阿里云ACR
       - name: 推送镜像
         run: |
           IMAGE_TAG=${{ github.sha }}
-          # 推送两个标签（SHA版本+latest）
           docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$IMAGE_TAG
           docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest
 
-      # 步骤5：退出登录（可选，增强安全性）
+      # 步骤5：退出登录
       - name: 退出登录
         run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
