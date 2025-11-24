@@ -1,22 +1,38 @@
-- name: 构建镜像（优化：变量清理 + 一次构建多标签）
-  run: |
-    # 清理变量（xargs 去除首尾空白/换行，避免拼接错误）
-    ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
-    ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
-    IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
-    TAG="${{ github.sha }}"
-    # 一次构建，打 2 个标签（避免重复构建，节省时间）
-    docker build -t "${IMAGE_REPO}:${TAG}" -t "${IMAGE_REPO}:latest" .
-
-- name: 推送镜像（优化：变量复用 + 清晰日志）
-  run: |
-    ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
-    ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
-    IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
-    TAG="${{ github.sha }}"
-    # 打印镜像地址（方便调试，查看实际推送的地址）
-    echo "正在推送镜像：${IMAGE_REPO}:${TAG}"
-    echo "正在推送镜像：${IMAGE_REPO}:latest"
-    # 执行推送
-    docker push "${IMAGE_REPO}:${TAG}"
-    docker push "${IMAGE_REPO}:latest"
+name: ACR最终构建推送
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+      - name: 登录阿里云ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: ${{ secrets.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_REGISTRY_USER }}
+          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
+      - name: 构建镜像（优化：变量清理 + 一次构建多标签）
+        run: |
+          # 清理变量（xargs 去除首尾空白/换行，避免拼接错误）
+          ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
+          ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
+          IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
+          TAG="${{ github.sha }}"
+          # 一次构建，打 2 个标签（避免重复构建，节省时间）
+          docker build -t "${IMAGE_REPO}:${TAG}" -t "${IMAGE_REPO}:latest" .
+      - name: 推送镜像（优化：变量复用 + 清晰日志）
+        run: |
+          ALIYUN_REGISTRY=$(echo "${{ secrets.ALIYUN_REGISTRY }}" | xargs)
+          ALIYUN_NAME_SPACE=$(echo "${{ secrets.ALIYUN_NAME_SPACE }}" | xargs)
+          IMAGE_REPO="${ALIYUN_REGISTRY}/${ALIYUN_NAME_SPACE}/web"
+          TAG="${{ github.sha }}"
+          # 打印镜像地址（方便调试，查看实际推送的地址）
+          echo "正在推送镜像：${IMAGE_REPO}:${TAG}"
+          echo "正在推送镜像：${IMAGE_REPO}:latest"
+          docker push "${IMAGE_REPO}:${TAG}"
+          docker push "${IMAGE_REPO}:latest"
+      - name: 退出登录
+        run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
