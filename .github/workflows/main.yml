@@ -1,41 +1,17 @@
-name: 自动构建并推送镜像到阿里云ACR
+name: 测试阿里云ACR登录
 on:
   push:
-    branches: [ main ]  # main分支推送代码时触发
-  pull_request:
     branches: [ main ]
 
 jobs:
-  build-and-push:
+  test-login:
     runs-on: ubuntu-latest
     steps:
-      # 步骤1：拉取GitHub仓库代码
-      - name: 拉取代码
-        uses: actions/checkout@v4
-
-      # 步骤2：登录阿里云ACR
       - name: 登录阿里云ACR
         uses: aliyun/acr-login@v1
         with:
           login-server: ${{ secrets.ALIYUN_REGISTRY }}
           username: ${{ secrets.ALIYUN_REGISTRY_USER }}
           password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
-
-      # 步骤3：构建Docker镜像（修正命令：去掉x，规范格式）
-      - name: 构建镜像
-        run: |
-          IMAGE_TAG=${{ github.sha }}  # 用提交SHA作为版本标签
-          # 修正后的构建命令（docker build，不是docker buildx build）
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$IMAGE_TAG .
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest .
-
-      # 步骤4：推送镜像到阿里云ACR
-      - name: 推送镜像
-        run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$IMAGE_TAG
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest
-
-      # 步骤5：退出登录
-      - name: 退出登录
-        run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
+      - name: 输出登录结果
+        run: echo "登录成功"
