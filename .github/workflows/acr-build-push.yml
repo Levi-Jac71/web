@@ -17,17 +17,21 @@ jobs:
           username: ${{ secrets.ALIYUN_REGISTRY_USER }}
           password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-      - name: 构建镜像（强制使用docker build）
+      - name: 构建镜像（使用 docker build）
         run: |
-          TAG=${{ github.sha }}
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$TAG .
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest .
+          # 定义镜像标签（复用变量，减少冗余）
+          IMAGE_REPO="${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web"
+          TAG="${{ github.sha }}"
+          # 构建 2 个标签（commit SHA + latest）
+          docker build -t "${IMAGE_REPO}:${TAG}" .
+          docker build -t "${IMAGE_REPO}:latest" .
 
       - name: 推送镜像
         run: |
-          TAG=${{ github.sha }}
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:$TAG
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web:latest
+          IMAGE_REPO="${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAME_SPACE }}/web"
+          TAG="${{ github.sha }}"
+          docker push "${IMAGE_REPO}:${TAG}"
+          docker push "${IMAGE_REPO}:latest"
 
       - name: 退出登录
         run: docker logout ${{ secrets.ALIYUN_REGISTRY }}
